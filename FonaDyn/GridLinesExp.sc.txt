@@ -1,0 +1,91 @@
+// This class extension redefines GridLines.getParams to implement the plotting of a logarithmic grid
+// when warp: \exp  is specified for the associated ControlSpec.
+// Sten Ternström, KTH Stockholm, 2018
+// Store this file in .\Extensions\SystemOverwrites for silent acceptance by the compiler.
+
+
++ GridLines {
+	getParams { |valueMin,valueMax,pixelMin,pixelMax,numTicks|
+		var lines,p,pixRange;
+		var graphmin,graphmax,range;
+
+		if (spec.warp.asSpecifier != \exp, {
+			var nfrac, d;
+			pixRange = abs(pixelMax - pixelMin);  // abs() was missing - S.T.
+			if(numTicks.isNil,{
+				numTicks = (pixRange / 40);  // was (pixRange / 64)  - S.T.
+				numTicks = numTicks.max(3).round(1);
+			});
+			# graphmin,graphmax,nfrac,d = this.ideals(valueMin,valueMax,numTicks);
+			lines = [];
+			if(d != inf,{
+				forBy(graphmin,graphmax + (0.5*d),d,{ arg tick;
+					if(tick.inclusivelyBetween(valueMin,valueMax),{
+						lines = lines.add( tick );
+					})
+				});
+			});
+			p = ();
+			p['lines'] = lines;
+			if(pixRange / numTicks > 9) {
+				p['labels'] = lines.collect({ arg val; [val, this.formatLabel(val,nfrac) ]});
+			};
+		}, {
+			// New clause for warp: \exp
+			var nDecades,first,step,tick;
+			if (valueMin==0, { ^nil });
+			if (valueMax==0, { ^nil });
+			pixRange = abs(pixelMax - pixelMin);
+			nDecades = log10(valueMax/valueMin);
+			if(numTicks.isNil, { numTicks = (pixRange / (40*nDecades)) } );
+
+			graphmin = valueMin;
+			graphmax = valueMax;
+			first = step = 10**(valueMin.log10.trunc);
+			lines = [];
+			tick = first;
+			while ({tick < valueMax}, {
+				if(tick.inclusivelyBetween(valueMin,valueMax),{
+					if((numTicks > 4)
+						.or((numTicks > 2.5).and(tick==this.niceNum(tick,true)))
+						.or(tick.log10.frac < 0.01),
+						{ lines = lines.add( tick )} );
+				});
+				if(tick >= (step*10), { step = (step*10) });
+				tick = (tick+step);
+			});
+			p = ();
+			p['lines'] = lines.explin(valueMin, valueMax, valueMin, valueMax);
+			if(pixRange / numTicks > 9) {
+				p['labels'] = lines.collect({ arg val, ix;
+					var logVal = val.explin(valueMin, valueMax, valueMin, valueMax);
+					[logVal, this.formatLabelExp(val,0) ] });
+			};
+		});
+		^p
+	}
+
+	// This method overridden by S.T.
+	formatLabel { arg val, numDecimalPlaces;
+		var str, valTmp;
+		str = val.round( (10**numDecimalPlaces).reciprocal).asString;
+		if (str.endsWith(".0"), { str = str.split($.)[0] });
+		^str + (spec.units ? "")
+	}
+
+	// This method added by S.T.
+	formatLabelExp { arg val, numDecimalPlaces;
+		var strVal, strUnit;
+		if(val.log10.frac < 0.01,
+			{ strVal = val.round.asString; strUnit = (spec.units ? "")},
+			{ strUnit = "";
+				if (val==this.niceNum(val,false),
+					{ strVal = val.asString;},
+					{ strVal = "" }
+				)}
+		);
+		if (strVal.endsWith(".0"), { strVal = strVal.split($.)[0] });
+		^(strVal + strUnit)
+	}
+}
+

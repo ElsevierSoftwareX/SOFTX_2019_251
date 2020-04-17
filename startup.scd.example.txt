@@ -1,0 +1,35 @@
+// SuperCollider Startup File settings appropriate for FonaDyn
+// Adapt the text below to your system.
+// Use the File | Open startup file command in SCIDE
+ 
+
+// Network security: Blocks external accesses to scsynth
+// Recommended in SuperCollider versions up to 3.10.2
+// Server.program = Server.program + "-B 127.0.0.1";
+
+// Specify which audio device to use.
+// A list is posted when the server boots.
+Server.local.options.device = nil;  		  // Use the default audio device
+// Server.local.options.device = "ASIO Fireface"; // Use a specific device
+
+// Specify the number of input and output channels.
+Server.local.options.numOutputBusChannels = 2;
+Server.local.options.numInputBusChannels = 2;
+
+// These can be only one contiguous range,
+// and channel numbers are zero-based.
+// Voice is always on 0, EGG is always on 1.
+// To record on, say, three extra channels 9,10,11
+// then you must choose 12 input channels above.
+
+// Allow greater complexity of connections (64 is the default)
+Server.local.options.numWireBufs = 256;
+
+// Specify in which directory to store recordings.
+// Use forward slashes even on Windows.
+thisProcess.platform.recordingsDir_("C:/Recordings");
+
+// Use the currently selected samplerate of the soundcard.
+Server.local.options.sampleRate = nil;
+// Make sure your audio device is running at 44100 Hz sample rate.
+
